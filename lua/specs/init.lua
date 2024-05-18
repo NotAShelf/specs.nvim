@@ -7,7 +7,7 @@ local au_toggle
 function M.on_cursor_moved()
     local cur = vim.fn.winline() + vim.api.nvim_win_get_position(0)[1]
     if old_cur then
-        local jump = math.abs(cur-old_cur)
+        local jump = math.abs(cur - old_cur)
         if jump >= opts.min_jump then
             M.show_specs()
         end
@@ -52,23 +52,26 @@ function M.show_specs(popup)
     end
 
     if popup == nil then
-      popup = {}
+        popup = {}
     end
 
-    local _opts = vim.tbl_deep_extend("force", opts, {popup = popup})
+    local _opts = vim.tbl_deep_extend("force", opts, { popup = popup })
 
-    local cursor_col = vim.fn.wincol()-1
-    local cursor_row = vim.fn.winline()-1
+    local cursor_col = vim.fn.wincol() - 1
+    local cursor_row = vim.fn.winline() - 1
     local bufh = vim.api.nvim_create_buf(false, true)
     local win_id = vim.api.nvim_open_win(bufh, false, {
-        relative= 'win',
+        relative = 'win',
         width = 1,
         height = 1,
         col = cursor_col,
         row = cursor_row,
-        style = 'minimal'
+        style = 'minimal',
+        noautocmd = true
     })
-    vim.api.nvim_win_set_option(win_id, 'winhl', 'Normal:'.. _opts.popup.winhl)
+
+    vim.api.nvim_set_option_value('filetype', 'specs.nvim', { buf = bufh })
+    vim.api.nvim_win_set_option(win_id, 'winhl', 'Normal:' .. _opts.popup.winhl)
     vim.api.nvim_win_set_option(win_id, "winblend", _opts.popup.blend)
 
     local cnt = 0
@@ -106,85 +109,101 @@ function M.show_specs(popup)
                 vim.loop.close(timer)
                 vim.api.nvim_win_close(win_id, true)
             end
-            cnt = cnt+1
+            cnt = cnt + 1
         end
     end))
-
 end
 
---[[ ▁▁▂▂▃▃▄▄▅▅▆▆▇▇██ ]]--
+--[[ ▁▁▂▂▃▃▄▄▅▅▆▆▇▇██ ]]
+--
 
 function M.linear_fader(blend, cnt)
     if blend + cnt <= 100 then
         return cnt
-    else return nil end
+    else
+        return nil
+    end
 end
 
---[[ ⌣/⌢\⌣/⌢\⌣/⌢\⌣/⌢\ ]]--
+--[[ ⌣/⌢\⌣/⌢\⌣/⌢\⌣/⌢\ ]]
+--
 
 function M.sinus_fader(blend, cnt)
-  if cnt <= 100 then
-    return math.ceil((math.sin(cnt * (1 / blend)) * 0.5 + 0.5) * 100)
-  else return nil end
+    if cnt <= 100 then
+        return math.ceil((math.sin(cnt * (1 / blend)) * 0.5 + 0.5) * 100)
+    else
+        return nil
+    end
 end
 
-
---[[ ▁▁▁▁▂▂▂▃▃▃▄▄▅▆▇ ]]--
+--[[ ▁▁▁▁▂▂▂▃▃▃▄▄▅▆▇ ]]
+--
 
 function M.exp_fader(blend, cnt)
-    if blend + math.floor(math.exp(cnt/10)) <= 100 then
-        return blend + math.floor(math.exp(cnt/10))
-    else return nil end
+    if blend + math.floor(math.exp(cnt / 10)) <= 100 then
+        return blend + math.floor(math.exp(cnt / 10))
+    else
+        return nil
+    end
 end
 
-
---[[ ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁ ]]--
+--[[ ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁ ]]
+--
 
 function M.pulse_fader(blend, cnt)
-    if cnt < (100-blend)/2 then
+    if cnt < (100 - blend) / 2 then
         return cnt
-    elseif cnt < 100-blend then
-        return 100-cnt
-    else return nil end
+    elseif cnt < 100 - blend then
+        return 100 - cnt
+    else
+        return nil
+    end
 end
 
---[[ ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ]]--
+--[[ ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ]]
+--
 
 function M.empty_fader(_, _)
     return nil
 end
 
-
---[[ ░░▒▒▓█████▓▒▒░░ ]]--
+--[[ ░░▒▒▓█████▓▒▒░░ ]]
+--
 
 function M.shrink_resizer(width, ccol, cnt)
-    if width-cnt > 0 then
-        return {width-cnt, ccol-(width-cnt)/2 + 1}
-    else return nil end
+    if width - cnt > 0 then
+        return { width - cnt, ccol - (width - cnt) / 2 + 1 }
+    else
+        return nil
+    end
 end
 
-
---[[ ████▓▓▓▒▒▒▒░░░░ ]]--
+--[[ ████▓▓▓▒▒▒▒░░░░ ]]
+--
 
 function M.slide_resizer(width, ccol, cnt)
-    if width-cnt > 0 then
-        return {width-cnt, ccol}
-    else return nil end
+    if width - cnt > 0 then
+        return { width - cnt, ccol }
+    else
+        return nil
+    end
 end
 
-
---[[ ███████████████ ]]--
+--[[ ███████████████ ]]
+--
 
 function M.empty_resizer(width, ccol, cnt)
     if cnt < 100 then
-        return {width, ccol - width/2}
-    else return nil end
+        return { width, ccol - width / 2 }
+    else
+        return nil
+    end
 end
 
 local DEFAULT_OPTS = {
-    show_jumps  = true,
-    min_jump = 30,
-    popup = {
+    show_jumps       = true,
+    min_jump         = 30,
+    popup            = {
         delay_ms = 10,
         inc_ms = 5,
         blend = 10,
@@ -194,7 +213,7 @@ local DEFAULT_OPTS = {
         resizer = M.shrink_resizer,
     },
     ignore_filetypes = {},
-    ignore_buftypes = {
+    ignore_buftypes  = {
         nofile = true,
     },
 }
@@ -213,7 +232,8 @@ function M.toggle()
 end
 
 function M.create_autocmds()
-    vim.cmd("augroup Specs") vim.cmd("autocmd!")
+    vim.cmd("augroup Specs")
+    vim.cmd("autocmd!")
     if opts.show_jumps then
         vim.cmd("silent autocmd CursorMoved * :lua require('specs').on_cursor_moved()")
     end
@@ -222,7 +242,8 @@ function M.create_autocmds()
 end
 
 function M.clear_autocmds()
-    vim.cmd("augroup Specs") vim.cmd("autocmd!")
+    vim.cmd("augroup Specs")
+    vim.cmd("autocmd!")
     vim.cmd("augroup END")
     au_toggle = false
 end
