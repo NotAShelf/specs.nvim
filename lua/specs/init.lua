@@ -101,7 +101,11 @@ function M.show_specs(popup)
                 vim.api.nvim_set_option_value("winblend", bl, { win = win_id })
             end
             if dm ~= nil then
-                config["col"][false] = dm[2]
+                if type(config["col"]) == "table" then
+                    config["col"][false] = dm[2]
+                else
+                    config["col"] = dm[2]
+                end
                 vim.api.nvim_win_set_config(win_id, config)
                 vim.api.nvim_win_set_width(win_id, dm[1])
             end
